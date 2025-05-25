@@ -1,10 +1,12 @@
 from fastapi import FastAPI, UploadFile, Form, HTTPException
 from contextlib import asynccontextmanager
 from app.utils.pdf_parser import extract_text_from_pdf
-from app.standard_rag.chunker import chunk_text
-from app.standard_rag.embedder import embed_chunks
-from app.standard_rag.retriever import create_collection, upload_embeddings
-from app.standard_rag.query import answer_question
+from app.rag.chunker import chunk_text
+from app.rag.embedder import embed_chunks
+from app.rag.retriever import create_collection, upload_embeddings
+from app.rag.query import answer_question
+from app.rag.self_query import self_query_rag_pipeline
+from app.rag.reranker_rag import reranker_rag_pipeline
 import logging
 import tempfile
 
@@ -32,4 +34,20 @@ async def query(question: str = Form(...)):
         return result
     except Exception as e:
         logging.exception("Query failed")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/self-query/")
+async def self_query(question: str = Form(...)):
+    try:
+        result = self_query_rag_pipeline(question)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/reranker-query/")
+def reranker_query(question: str = Form(...)):
+    try:
+        result = reranker_rag_pipeline(question)
+        return result
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

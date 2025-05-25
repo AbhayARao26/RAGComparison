@@ -6,3 +6,5 @@ qdrant-client
 python-multipart
 httpx
 groq
+google-generativeai
+python-dotenv
