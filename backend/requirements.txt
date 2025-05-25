@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+PyPDF2
+sentence-transformers
+qdrant-client
+python-multipart
+httpx
+groq
