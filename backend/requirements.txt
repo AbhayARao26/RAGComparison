@@ -1,7 +1,6 @@
 # backend/requirements.txt
 fastapi
 uvicorn
-PyPDF2
 sentence-transformers
 qdrant-client
 python-multipart
