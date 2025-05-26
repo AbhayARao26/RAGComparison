@@ -10,6 +10,13 @@ from app.rag.self_query import self_query_rag_pipeline
 from app.rag.reranker_rag import reranker_rag_pipeline
 import logging
 import tempfile
+from pydantic import BaseModel
+
+# Define a Pydantic model for the chat request body
+class ChatRequest(BaseModel):
+    rag_type: str
+    model_id: str
+    message: str
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -46,27 +53,29 @@ async def upload_pdf(file: UploadFile):
         logging.exception("PDF upload failed")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/query/")
-async def query(question: str = Form(...)):
+@app.post("/chat")
+async def chat(request: ChatRequest):
     try:
-        result = answer_question(question)
-        return result
-    except Exception as e:
-        logging.exception("Query failed")
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/self-query/")
-async def self_query(question: str = Form(...)):
-    try:
-        result = self_query_rag_pipeline(question)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Route based on RAG type
+        if request.rag_type == 'basic':
+            # Call the basic RAG function (currently uses Groq)
+            # In a more advanced version, pass request.model_id here
+            result = answer_question(request.message)
+        elif request.rag_type == 'self-query':
+             # Call the self-query RAG function (currently uses Gemini)
+            # In a more advanced version, pass request.model_id here
+            result = self_query_rag_pipeline(request.message)
+        elif request.rag_type == 'reranker':
+            # Call the reranker RAG function (currently uses Gemini + Jina)
+            # In a more advanced version, pass request.model_id here
+            result = reranker_rag_pipeline(request.message)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid RAG type")
 
-@app.post("/reranker-query/")
-def reranker_query(question: str = Form(...)):
-    try:
-        result = reranker_rag_pipeline(question)
+        # The structure of 'result' depends on the RAG function called.
+        # You might need to standardize the output format if they differ.
         return result
+
     except Exception as e:
+        logging.exception(f"Chat request failed for RAG type {request.rag_type} and model {request.model_id}")
         raise HTTPException(status_code=500, detail=str(e))

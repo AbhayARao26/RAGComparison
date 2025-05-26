@@ -6,8 +6,8 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [query, setQuery] = useState<string>('');
   const [response, setResponse] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('groq'); // Default to groq for now, model selection is separate
-  const [selectedRagType, setSelectedRagType] = useState<string>('basic'); // Add state for RAG type
+  const [selectedModel, setSelectedModel] = useState<string>('groq');
+  const [selectedRagType, setSelectedRagType] = useState<string>('basic');
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -24,7 +24,6 @@ export default function Home() {
     setSelectedModel(event.target.value);
   };
 
-  // Handler for RAG type selection
   const handleRagTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     setSelectedRagType(event.target.value);
   };
@@ -65,53 +64,32 @@ export default function Home() {
       return;
     }
 
+    console.log(`Using RAG Type: ${selectedRagType}, Model: ${selectedModel}`);
+
     setLoading(true);
     setResponse('');
 
-    // Determine the backend endpoint based on selected RAG type
-    let endpoint = 'http://localhost:8000/';
-    switch (selectedRagType) {
-      case 'basic':
-        endpoint += 'query/'; // Maps to the Groq endpoint
-        break;
-      case 'self-query':
-        endpoint += 'self-query/';
-        break;
-      case 'reranker':
-        endpoint += 'reranker-query/';
-        break;
-      default:
-        alert('Invalid RAG type selected.');
-        setLoading(false);
-        return;
-    }
-
-    // NOTE: The model selection dropdown is still visual only in this basic version.
-    // The backend endpoints are currently tied to specific models/RAG types.
-    // For full model control with the selected RAG type, the backend /chat endpoint
-    // from the initial prompt would need to be implemented.
-
-    const queryFormData = new FormData();
-    queryFormData.append('question', query);
-    // In a more advanced version with the /chat endpoint, you'd also send:
-    // queryFormData.append('rag_type', selectedRagType);
-    // queryFormData.append('model_id', selectedModel);
-
+    const chatRequestData = {
+        rag_type: selectedRagType,
+        model_id: selectedModel,
+        message: query,
+    };
 
     try {
-      const queryResponse = await fetch(endpoint, { // Use the determined endpoint
+      const queryResponse = await fetch('http://localhost:8000/chat', {
         method: 'POST',
-        body: queryFormData,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(chatRequestData),
       });
 
       if (queryResponse.ok) {
         const result = await queryResponse.json();
-        // Display the relevant part of the response based on the endpoint
-        // The exact response structure might vary slightly between endpoints
         if (result && result.answer) {
              setResponse(result.answer);
         } else {
-            setResponse(JSON.stringify(result, null, 2)); // Display full result if structure unexpected
+            setResponse(JSON.stringify(result, null, 2));
         }
 
       } else {
@@ -140,22 +118,18 @@ export default function Home() {
       <div style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
         <h2>Query</h2>
         <div style={{ marginBottom: '10px' }}>
-           {/* Dropdown for RAG Type */}
            <label htmlFor="rag-select" style={{ marginRight: '10px' }}>Choose RAG Type:</label>
            <select id="rag-select" value={selectedRagType} onChange={handleRagTypeChange} style={{ marginRight: '20px' }} disabled={loading}>
-               <option value="basic">Basic RAG (Groq)</option> {/* Corresponds to /query/ */}
-               <option value="self-query">Self-Query RAG (Gemini)</option> {/* Corresponds to /self-query/ */}
-               <option value="reranker">Reranker RAG (Gemini + Jina)</option> {/* Corresponds to /reranker-query/ */}
+               <option value="basic">Basic RAG</option>
+               <option value="self-query">Self-Query RAG</option>
+               <option value="reranker">Reranker RAG</option>
            </select>
 
-          {/* Dropdown for Model (Still placeholder functionality) */}
           <label htmlFor="model-select" style={{ marginRight: '10px' }}>Choose Model:</label>
           <select id="model-select" value={selectedModel} onChange={handleModelChange} disabled={loading}>
-            {/* These options are visual placeholders or tied to specific RAG types */}
-            <option value="gemini">Gemini (Placeholder)</option>
-            <option value="groq">Groq (Used in Basic RAG)</option>
-            <option value="jina">Jina (Used in Reranker, but needs Gemini for LLM)</option>
-             {/* Add other models as needed */}
+            <option value="gemini">Gemini</option>
+            <option value="groq">Groq</option>
+            <option value="jina">Jina (Note: Jina is a reranker, not an LLM itself)</option>
           </select>
         </div>
         <form onSubmit={handleQuerySubmit}>
@@ -180,11 +154,9 @@ export default function Home() {
         {!loading && response !== '' && <div style={{ whiteSpace: 'pre-wrap' }}>{response}</div>}
       </div>
 
-       {/* Placeholder for the Comparison Tab */}
        <div style={{ marginTop: '30px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', backgroundColor: '#f0f0f0' }}>
            <h2>Comparison Tab (Placeholder)</h2>
            <p>This area will display evaluation scores and compare results from different chat panels.</p>
-           {/* Content for comparison table/cards goes here */}
        </div>
 
     </div>
