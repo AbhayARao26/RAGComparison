@@ -1,0 +1,14 @@
+Dockerfile
+docker-compose.yml
+.git
+.gitignore
+.env
+__pycache__/
+*.pyc
+*.log
+npm-debug.log
+node_modules/
+build/
+dist/
+*.swp
+*.swo 
