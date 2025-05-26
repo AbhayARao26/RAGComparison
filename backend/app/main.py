@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, Form, HTTPException
 from contextlib import asynccontextmanager
-from app.utils.pdf_parser import extract_text_from_pdf
+from app.utils.OCR import extract_text_from_pdf
 from app.rag.chunker import chunk_text
 from app.rag.embedder import embed_chunks
 from app.rag.retriever import create_collection, upload_embeddings
@@ -19,13 +19,17 @@ app = FastAPI(lifespan=lifespan)
 
 @app.post("/upload/")
 async def upload_pdf(file: UploadFile):
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(await file.read())
-        texts = extract_text_from_pdf(tmp.name)
-        chunks = chunk_text(texts)
-        embedded = embed_chunks(chunks)
-        upload_embeddings(embedded)
-    return {"message": "PDF processed and indexed"}
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(await file.read())
+            texts = extract_text_from_pdf(tmp.name)
+            chunks = chunk_text(texts)
+            embedded = embed_chunks(chunks)
+            upload_embeddings(embedded)
+        return {"message": "PDF processed and indexed"}
+    except Exception as e:
+        logging.exception("PDF upload failed")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/query/")
 async def query(question: str = Form(...)):

@@ -1,0 +1,144 @@
+Project Overview:
+Build a web application using Next.js (frontend) and FastAPI (backend) that allows users to open multiple chat panels. In each panel, users can select:
+- The type of RAG (Retrieval-Augmented Generation) pipeline (from a dropdown)
+- The LLM (Large Language Model) (from a dropdown)
+
+Each chat panel displays the selected model's details and allows users to interact with the chosen RAG+model combination.
+
+At the bottom of the screen, below the chat panels, add a "Comparison Tab" that:
+- Shows which model and RAG combination gave the best result for the current session
+- Displays scores for each chat panel's output (e.g., relevance, accuracy, helpfulness, etc.)
+- Ranks or highlights the best-performing combination
+
+---
+
+Frontend (Next.js) Requirements:
+
+1. Multi-Panel Chat UI:
+   - Multiple chat panels (like tabs or columns)
+   - Each panel has:
+     - Dropdown for RAG type
+     - Dropdown for LLM model
+     - Model details (context, pricing, description)
+     - Chat interface (history, input box)
+
+2. Comparison Tab (at the bottom):
+   - Table or card view listing each chat panel:
+     - Selected RAG type
+     - Selected model
+     - Last output/response
+     - Evaluation scores (e.g., relevance, accuracy, helpfulness)
+     - Highlight the best result (highest score)
+   - Optionally, allow users to manually rate outputs or trigger automatic evaluation
+
+3. Dropdown Data:
+   - Fetch available RAG types and LLM models from backend
+
+4. Model Details:
+   - Fetch and display model details when selected
+
+5. Chat Functionality:
+   - Send user message, selected RAG type, and model to backend
+   - Display response in chat panel
+
+6. Comparison Functionality:
+   - After each response, send all outputs to backend for evaluation/scoring
+   - Display scores and highlight best result in the comparison tab
+
+---
+
+Backend (FastAPI) Requirements:
+
+1. API Endpoints:
+   - GET /rag-types  
+     Returns list of available RAG types  
+   - GET /models  
+     Returns list of available LLM models and their details  
+   - POST /chat  
+     Accepts user message, selected RAG type, and model, returns model's response  
+   - POST /evaluate  
+     Accepts all chat panel outputs, returns evaluation scores and best result  
+     Request:  
+     {
+       "panels": [
+         {
+           "rag_type": "basic",
+           "model_id": "gemini-flash",
+           "output": "Model's response here"
+         },
+         {
+           "rag_type": "hybrid",
+           "model_id": "mistral-saba-24b",
+           "output": "Another model's response"
+         }
+         // ... more panels
+       ]
+     }
+     
+     Response:  
+     {
+       "scores": [
+         {
+           "rag_type": "basic",
+           "model_id": "gemini-flash",
+           "relevance": 0.92,
+           "accuracy": 0.88,
+           "helpfulness": 0.90,
+           "total_score": 0.90
+         },
+         {
+           "rag_type": "hybrid",
+           "model_id": "mistral-saba-24b",
+           "relevance": 0.85,
+           "accuracy": 0.80,
+           "helpfulness": 0.82,
+           "total_score": 0.82
+         }
+         // ... more scores
+       ],
+       "best": {
+         "rag_type": "basic",
+         "model_id": "gemini-flash",
+         "total_score": 0.90
+       }
+     }
+
+2. Variables to Expose:
+   - RAG types (rag_type)
+   - Model IDs (model_id)
+   - Model details (context, pricing, description)
+   - Chat message (message)
+   - Chat output (output)
+   - Evaluation scores (relevance, accuracy, helpfulness, total_score)
+   - Best result (best)
+
+---
+
+Integration Notes:
+- Frontend fetches RAG types and models from backend
+- All chat interactions go through /chat endpoint
+- After each round, frontend sends all outputs to /evaluate for scoring
+- Backend returns scores and best result for display in the comparison tab
+
+---
+
+Summary Table of Endpoints & Variables:
+
+| Endpoint         | Method | Purpose                        | Key Variables         |
+|------------------|--------|--------------------------------|----------------------|
+| /rag-types       | GET    | List available RAG types       | id, name             |
+| /models          | GET    | List available LLM models      | id, name, context, input_pricing, output_pricing, description |
+| /chat            | POST   | Send message to RAG+model      | rag_type, model_id, message, response |
+| /evaluate        | POST   | Evaluate all outputs           | panels (rag_type, model_id, output), scores, best |
+
+---
+
+Design Suggestion:
+- Modern, clean UI
+- Chat panels at the top/middle
+- Comparison tab fixed at the bottom, always visible
+- Table or cards for easy comparison, highlight best result
+
+---
+
+Please generate the full codebase skeleton (Next.js + FastAPI) with these endpoints, variables, and UI features, so I can easily integrate my RAG, model, and evaluation logic later. 

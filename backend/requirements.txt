@@ -8,3 +8,6 @@ httpx
 groq
 google-generativeai
 python-dotenv
+pdfplumber
+pdf2image
+pytesseract
