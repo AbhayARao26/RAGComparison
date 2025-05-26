@@ -266,75 +266,156 @@ export default function Home() {
     const renderContext = (context: string | object | null) => {
         if (!context) return <p>No context available.</p>;
         if (typeof context === 'string') {
-            return <div style={{ whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto', fontSize: '0.8em', color: '#555' }}>{context}</div>;
+            return <div style={{ whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto', fontSize: '0.8em', color: '#bbb' }}>{context}</div>; // Darker theme text color
         }
         // If context is an object (e.g., list of sources), stringify it
-        return <div style={{ whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto', fontSize: '0.8em', color: '#555' }}>{JSON.stringify(context, null, 2)}</div>;
+        return <div style={{ whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto', fontSize: '0.8em', color: '#bbb' }}>{JSON.stringify(context, null, 2)}</div>; // Darker theme text color
     };
 
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1000px', margin: 'auto' }}>
-      <h1>RAG Comparison Frontend</h1>
+    <div style={{ 
+      padding: '0px', 
+      width: '100%', 
+      margin: '0', 
+      backgroundColor: '#1a1a2e', 
+      color: '#ffffff', 
+      minHeight: '100vh' 
+    }}>
 
-      <div style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
-        <h2>Upload PDF</h2>
-        <input type="file" accept=".pdf" onChange={handleFileChange} style={{ marginBottom: '10px' }} />
-        <button onClick={handleUpload} disabled={!selectedFile || overallLoading}>
-          {overallLoading ? 'Processing...' : 'Upload and Process PDF'}
-        </button>
-         {overallLoading && !panels.some(p => p.loading) && <p>Upload in progress...</p>}
-      </div>
+      {/* Header Section */}
+      <header style={{ 
+        backgroundColor: '#1a1a2e', 
+        padding: '20px', 
+        borderRadius: '0px 0px 8px 8px',
+        width: '100%'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <h1 style={{ margin: '0', fontSize: '2em' }}>RAG Model Comparison Platform</h1> {/* Larger title */}
+            <p style={{ margin: '5px 0 0 0', color: '#bbb' }}>Compare different RAG pipelines and language models side by side</p> {/* Subtitle */}
+          </div>
+          {/* Add Panel and Theme Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {/* Add Panel Button */}
+            <button onClick={handleAddPanel} disabled={overallLoading} style={{ marginRight: '10px', padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: overallLoading ? 'not-allowed' : 'pointer' }}>
+              + Add Panel
+            </button>
+          </div>
+        </div>
 
-      <div style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
-        <h2>Query</h2>
-        <form onSubmit={handleQuerySubmit}>
-          <input
-            type="text"
-            value={query}
-            onChange={handleQueryChange}
-            placeholder="Enter your query here (will be sent to all panels)"
-            style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-            disabled={overallLoading}
-          />
-          <button type="submit" disabled={!query.trim() || overallLoading}>
-            {overallLoading ? 'Generating & Evaluating...' : 'Generate Responses & Evaluate'}
-          </button>
-        </form>
-      </div>
-
-      {/* Add Panel Button */}
-      <button onClick={handleAddPanel} disabled={overallLoading} style={{ marginBottom: '20px' }}>
-        Add New Panel
-      </button>
+        {/* Upload and Query Section */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' , flexGrow: 1, padding: '8px', borderRadius: '4px', border: '1px solid #555', backgroundColor: '#2a2a4a', marginBottom: '10px', color: '#ffffff'}}>
+          {/* Upload Section */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <label style={{ color: '#bbb' }}>Upload PDF Document:</label>
+            <div style={{ position: 'relative', flexGrow: 1 }}>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  cursor: 'pointer'
+                }}
+              />
+              <button
+                type="button"
+                style={{
+                  width: '100%',
+                  padding: '8px 15px',
+                  backgroundColor: '#2a2a4a',
+                  color: '#ffffff',
+                  border: '1px solid #555',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                {selectedFile ? selectedFile.name : 'Choose PDF file'}
+              </button>
+            </div>
+            <button onClick={handleUpload} disabled={!selectedFile || overallLoading} style={{ padding: '8px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: overallLoading ? 'not-allowed' : 'pointer' }}>
+              {overallLoading && !panels.some(p => p.loading) ? 'Processing...' : 'Create Embeddings'}
+            </button>
+          </div>
+        </div>
+        <div>  
+          {/* Query Section */}
+          <form onSubmit={handleQuerySubmit} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <input
+              type="text"
+              value={query}
+              onChange={handleQueryChange}
+              placeholder="Enter your question about the document"
+              style={{ 
+                flexGrow: 1, 
+                padding: '8px', 
+                borderRadius: '4px', 
+                border: '1px solid #555', 
+                backgroundColor: '#2a2a4a', 
+                color: '#ffffff' 
+              }}
+              disabled={overallLoading}
+            />
+            <button 
+              type="submit" 
+              disabled={!query.trim() || overallLoading} 
+              style={{ 
+                padding: '8px 15px', 
+                backgroundColor: '#007bff', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px', 
+                cursor: overallLoading ? 'not-allowed' : 'pointer' 
+              }}
+            >
+              {overallLoading ? 'Generating...' : 'Generate'} {/* Change button text */}
+            </button>
+          </form>
+        </div>
+      </header>
 
       {/* Container for Panels */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+        gap: '20px', 
+        padding: '0 20px', 
+        marginBottom: '20px',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
         {panels.map(panel => {
             const panelEvaluation = getPanelEvaluation(panel.id);
             const isBestPanel = evaluationResults?.best_panel_id === panel.id;
              // Apply shadow based on evaluation result
             const panelStyle = {
-                border: '1px solid #ccc',
+                border: '1px solid #555', // Darker border
                 padding: '15px',
                 borderRadius: '8px',
+                backgroundColor: '#2a2a4a', // Darker panel background
                 boxShadow: isBestPanel ? '0 0 10px 5px rgba(144, 238, 144, 0.6)' : 'none', // Light green shadow
                 transition: 'box-shadow 0.3s ease-in-out', // Smooth transition
+                color: '#ffffff', // White text for panels
             };
 
             return (
                 <div key={panel.id} style={panelStyle}>
                   {/* Panel Header with Delete Button */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <h3>Panel {panel.id}</h3>
+                      <h3 style={{ margin: '0' }}>Panel {panel.id}</h3> {/* Remove default margin */}
                        {/* Show delete button only if more than 1 panel exists */}
                       {panels.length > 1 && (
                           <button
                               onClick={() => handleDeletePanel(panel.id)}
                               disabled={overallLoading}
-                              style={{ background: 'red', color: 'white', border: 'none', borderRadius: '4px', padding: '5px 10px', cursor: overallLoading ? 'not-allowed' : 'pointer' }}
+                              style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', padding: '5px 10px', cursor: overallLoading ? 'not-allowed' : 'pointer' }}
                           >
-                              Delete
+                              X {/* Use X for delete button */}
                           </button>
                       )}
                   </div>
@@ -346,7 +427,14 @@ export default function Home() {
                       id={`rag-select-${panel.id}`}
                       value={panel.selectedRagType}
                       onChange={(e) => handlePanelChange(panel.id, 'selectedRagType', e.target.value)}
-                      style={{ marginRight: '20px' }}
+                      style={{ 
+                        marginRight: '20px', 
+                        padding: '5px', 
+                        borderRadius: '4px', 
+                        border: '1px solid #555', 
+                        backgroundColor: '#2a2a4a', 
+                        color: '#ffffff' 
+                      }}
                       disabled={overallLoading}
                     >
                       <option value="basic">Basic RAG</option>
@@ -360,6 +448,13 @@ export default function Home() {
                       id={`model-select-${panel.id}`}
                       value={panel.selectedModel}
                       onChange={(e) => handlePanelChange(panel.id, 'selectedModel', e.target.value)}
+                      style={{ 
+                        padding: '5px', 
+                        borderRadius: '4px', 
+                        border: '1px solid #555', 
+                        backgroundColor: '#2a2a4a', 
+                        color: '#ffffff' 
+                      }}
                       disabled={overallLoading}
                     >
                        {/* Use backend expected model_id IDs as values */}
@@ -371,20 +466,20 @@ export default function Home() {
                   </div>
 
                   <h4>Response (Panel {panel.id})</h4>
-                  {panel.loading && <p>Loading response...</p>}
-                  {!panel.loading && panel.response === '' && <p>Panel ready. Submit a query.</p>}
+                  {panel.loading && <p style={{ color: '#bbb' }}>Loading response...</p>} {/* Darker loading text */}
+                  {!panel.loading && panel.response === '' && <p style={{ color: '#bbb' }}>Panel ready. Submit a query.</p>} {/* Darker placeholder text */}
                   {!panel.loading && panel.response !== '' && <div style={{ whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>{panel.response}</div>} {/* Add scroll */}
 
                   {/* Display Response Time */}
                    {panel.responseTime !== null && (
-                       <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                       <div style={{ marginTop: '10px', borderTop: '1px solid #555', paddingTop: '10px', color: '#bbb' }}> {/* Darker border and text */}
                            <p>Response Time: {panel.responseTime.toFixed(2)} s</p> {/* Format to 2 decimal places */}
                        </div>
                    )}
 
                   {/* Display Context */}
                    {panel.context !== null && (
-                       <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                       <div style={{ marginTop: '10px', borderTop: '1px solid #555', paddingTop: '10px', color: '#bbb' }}> {/* Darker border and text */}
                            <h4>Context Used</h4>
                            {renderContext(panel.context)} {/* Use helper function */}
                        </div>
@@ -392,7 +487,7 @@ export default function Home() {
 
                   {/* Display Panel Specific Evaluation Scores */}
                   {panelEvaluation && (
-                      <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                      <div style={{ marginTop: '10px', borderTop: '1px solid #555', paddingTop: '10px', color: '#bbb' }}> {/* Darker border and text */}
                           <h4>Evaluation Scores</h4>
                           <p>Similarity Score: {panelEvaluation.similarity_score}</p>
                           <p>Correctness Score: {panelEvaluation.correctness_score}</p>
@@ -405,13 +500,24 @@ export default function Home() {
       </div>
 
       {/* Comparison Tab Displaying Benchmark Answer and Overall Best */}
-      <div style={{ marginTop: '0px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', backgroundColor: '#000000' }}>
+      <div style={{ 
+        marginTop: '0px',
+        marginLeft: '20px',
+        marginRight: '20px', 
+        border: '1px solid #555', 
+        padding: '15px 15px', 
+        borderRadius: '8px', 
+        backgroundColor: '#2a2a4a', 
+        color: '#ffffff',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
         <h2>Comparison & Benchmark</h2>
-         {overallLoading && evaluationResults === null && <p>Waiting for responses to evaluate...</p>}
+         {overallLoading && evaluationResults === null && <p style={{ color: '#bbb' }}>Waiting for responses to evaluate...</p>} {/* Darker loading text */}
         {evaluationResults && (
             <div>
                 <h4>Benchmark Answer (Generated by Gemini from PDF)</h4>
-                <div style={{ whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', border: '1px dashed #999', padding: '10px', marginBottom: '15px' }}>
+                <div style={{ whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', border: '1px dashed #777', padding: '10px', marginBottom: '15px', backgroundColor: '#2a2a4a', color: '#ffffff' }}> {/* Darker border and background */}
                     {evaluationResults.benchmark_answer}
                 </div>
 
@@ -433,7 +539,7 @@ export default function Home() {
                 </ul> */}
             </div>
         )}
-        {!overallLoading && !evaluationResults && <p>Generate responses to see comparison results here.</p>}
+        {!overallLoading && !evaluationResults && <p style={{ color: '#bbb' }}>Generate responses to see comparison results here.</p>} {/* Darker placeholder text */}
       </div>
 
     </div>
