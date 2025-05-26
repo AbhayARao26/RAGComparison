@@ -108,6 +108,12 @@ This project compares different RAG (Retrieval-Augmented Generation) strategies 
     npm install
     ```
 
+    Create a `.env.local` file in the `frontend` directory with the following content:
+
+    ```env
+    NEXT_PUBLIC_API_URL=http://localhost:8000
+    ```
+
     Run the frontend development server:
 
     ```bash
