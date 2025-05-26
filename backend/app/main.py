@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.utils.OCR import extract_text_from_pdf
 from app.rag.chunker import chunk_text
@@ -16,6 +17,20 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+# Add CORS middleware
+origins = [
+    "http://localhost:3000",  # Allow requests from your Next.js frontend
+    # Add other origins if needed (e.g., production frontend URL)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"], # Allows all headers
+)
 
 @app.post("/upload/")
 async def upload_pdf(file: UploadFile):
