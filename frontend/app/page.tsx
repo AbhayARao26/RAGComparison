@@ -9,6 +9,9 @@ interface ChatPanelState {
   selectedModel: string;
   response: string;
   loading: boolean;
+  // Add fields for response time and context
+  responseTime: number | null;
+  context: string | object | null; // Context could be a string or structured object (e.g., list of sources)
 }
 
 interface PanelEvaluation {
@@ -28,11 +31,10 @@ interface EvaluationResults {
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [query, setQuery] = useState<string>('');
-  // Use an array to manage the state of multiple panels
+  // Initialize panels with new fields
   const [panels, setPanels] = useState<ChatPanelState[]>([
-    { id: 1, selectedRagType: 'basic', selectedModel: 'groq', response: '', loading: false },
-    { id: 2, selectedRagType: 'self-query', selectedModel: 'gemini', response: '', loading: false },
-    // Remove the third panel to set default to 2
+    { id: 1, selectedRagType: 'basic', selectedModel: 'groq', response: '', loading: false, responseTime: null, context: null },
+    { id: 2, selectedRagType: 'self-query', selectedModel: 'gemini', response: '', loading: false, responseTime: null, context: null },
   ]);
   const [overallLoading, setOverallLoading] = useState<boolean>(false); // Loading state for the overall query
   const [evaluationResults, setEvaluationResults] = useState<EvaluationResults | null>(null); // State for evaluation results
@@ -49,7 +51,7 @@ export default function Home() {
   };
 
   // Handler for changes within a specific panel
-  const handlePanelChange = (id: number, field: keyof ChatPanelState, value: string | boolean) => {
+  const handlePanelChange = (id: number, field: keyof ChatPanelState, value: any) => { // Use 'any' for value to accommodate string, boolean, number, object
     setPanels(prevPanels =>
       prevPanels.map(panel =>
         panel.id === id ? { ...panel, [field]: value } : panel
@@ -67,6 +69,8 @@ export default function Home() {
         selectedModel: 'groq',    // Default model for new panels
         response: '',
         loading: false,
+        responseTime: null, // Initialize new fields
+        context: null,      // Initialize new fields
       },
     ]);
     setEvaluationResults(null); // Clear evaluation results when panels change
@@ -96,9 +100,9 @@ export default function Home() {
       return;
     }
 
-    // Set loading for all panels during upload (optional, can be a global state)
     setOverallLoading(true);
-     setPanels(prevPanels => prevPanels.map(panel => ({ ...panel, loading: true, response: ''})));
+     // Clear response, loading, time, and context on new upload
+     setPanels(prevPanels => prevPanels.map(panel => ({ ...panel, loading: true, response: '', responseTime: null, context: null })));
      setEvaluationResults(null); // Clear results on new upload
 
 
@@ -133,9 +137,9 @@ export default function Home() {
     }
 
     setOverallLoading(true);
-    // Set loading and clear response for all panels
+    // Set loading and clear response, time, and context for all panels
     setPanels(prevPanels =>
-      prevPanels.map(panel => ({ ...panel, loading: true, response: '' }))
+      prevPanels.map(panel => ({ ...panel, loading: true, response: '', responseTime: null, context: null }))
     );
     setEvaluationResults(null); // Clear previous evaluation results
 
@@ -143,7 +147,7 @@ export default function Home() {
     console.log(`Submitting query: "${query}" to ${panels.length} panels concurrently.`);
 
     // Create an array of promises, one for each panel's API call
-    // Modify the map to return the panel ID and the fetched response text
+    // Modify the map to return the panel ID and the fetched response data
     const fetchPromises = panels.map(async (panel) => {
       const chatRequestData = {
         rag_type: panel.selectedRagType,
@@ -151,7 +155,8 @@ export default function Home() {
         message: query,
       };
 
-      let finalResponseText = ''; // Variable to hold the final response text (success or error)
+      let panelResponseData = null; // Variable to hold the full response data (including time and context)
+      let finalResponseText = ''; // Variable to hold just the answer text for display/evaluation
 
       try {
         const queryResponse = await fetch('http://localhost:8000/chat', {
@@ -163,26 +168,47 @@ export default function Home() {
         });
 
         if (queryResponse.ok) {
-          const result = await queryResponse.json();
-           finalResponseText = result.answer || JSON.stringify(result, null, 2);
+          panelResponseData = await queryResponse.json();
+           finalResponseText = panelResponseData.answer || JSON.stringify(panelResponseData, null, 2);
+           // Update state with response, time, and context
+           handlePanelChange(panel.id, 'response', finalResponseText);
+           handlePanelChange(panel.id, 'responseTime', panelResponseData.response_time || null);
+           handlePanelChange(panel.id, 'context', panelResponseData.context || null);
+
         } else {
            const error = await queryResponse.json();
            finalResponseText = `Error: ${error.detail || 'Unknown error'}`;
+           // Update state with error response
+           handlePanelChange(panel.id, 'response', finalResponseText);
+           handlePanelChange(panel.id, 'responseTime', null); // No time on error
+           handlePanelChange(panel.id, 'context', null); // No context on error
         }
 
-         // Update the state for this specific panel with the received response text
-         handlePanelChange(panel.id, 'response', finalResponseText);
          // Set loading to false for this specific panel when done
          handlePanelChange(panel.id, 'loading', false);
 
-        // Return the panel ID and the final response text from the promise
-        return { id: panel.id, response: finalResponseText };
+        // Return the panel ID and the collected response data for evaluation
+        return {
+            id: panel.id,
+            response: finalResponseText, // Send answer text for evaluation
+            context: panelResponseData?.context || null, // Include context if available
+            response_time: panelResponseData?.response_time || null, // Include response time
+        };
 
       } catch (error: any) {
          finalResponseText = `Error: ${error.message}`;
+         // Update state with error response
          handlePanelChange(panel.id, 'response', finalResponseText);
+         handlePanelChange(panel.id, 'responseTime', null);
+         handlePanelChange(panel.id, 'context', null);
          handlePanelChange(panel.id, 'loading', false);
-         return { id: panel.id, response: finalResponseText }; // Return error text as response
+         // Return error info for evaluation (response text will be the error message)
+         return {
+             id: panel.id,
+             response: finalResponseText,
+             context: null,
+             response_time: null,
+         };
       }
     });
 
@@ -193,10 +219,13 @@ export default function Home() {
     console.log('Panel results collected for evaluation:', panelResults); // Log the collected results
 
     // --- Trigger Evaluation After All Panels Respond ---
-    // Use the results directly from the promises, which now include the response text
+    // Use the results collected directly from the promises
     const panelOutputsForEvaluation = panelResults.map(result => ({
         id: result.id,
-        response: result.response, // Use the response text from the promise result
+        response: result.response, // Send the answer text for evaluation
+        // Include context and response_time in the evaluation request if backend needs them
+        context: result.context,
+        response_time: result.response_time,
     }));
 
     try {
@@ -231,6 +260,16 @@ export default function Home() {
     const getPanelEvaluation = (panelId: number | undefined) => {
         if (!evaluationResults || panelId === undefined) return null;
         return evaluationResults.scores.find(score => score.id === panelId);
+    };
+
+    // Helper to render context - can be a string or object
+    const renderContext = (context: string | object | null) => {
+        if (!context) return <p>No context available.</p>;
+        if (typeof context === 'string') {
+            return <div style={{ whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto', fontSize: '0.8em', color: '#555' }}>{context}</div>;
+        }
+        // If context is an object (e.g., list of sources), stringify it
+        return <div style={{ whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto', fontSize: '0.8em', color: '#555' }}>{JSON.stringify(context, null, 2)}</div>;
     };
 
 
@@ -336,10 +375,25 @@ export default function Home() {
                   {!panel.loading && panel.response === '' && <p>Panel ready. Submit a query.</p>}
                   {!panel.loading && panel.response !== '' && <div style={{ whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>{panel.response}</div>} {/* Add scroll */}
 
+                  {/* Display Response Time */}
+                   {panel.responseTime !== null && (
+                       <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                           <p>Response Time: {panel.responseTime.toFixed(2)} s</p> {/* Format to 2 decimal places */}
+                       </div>
+                   )}
+
+                  {/* Display Context */}
+                   {panel.context !== null && (
+                       <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                           <h4>Context Used</h4>
+                           {renderContext(panel.context)} {/* Use helper function */}
+                       </div>
+                   )}
+
                   {/* Display Panel Specific Evaluation Scores */}
                   {panelEvaluation && (
                       <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                          <h4>Evaluation</h4>
+                          <h4>Evaluation Scores</h4>
                           <p>Similarity Score: {panelEvaluation.similarity_score}</p>
                           <p>Correctness Score: {panelEvaluation.correctness_score}</p>
                           <p>Total Score: {panelEvaluation.total_score}</p>
@@ -351,7 +405,7 @@ export default function Home() {
       </div>
 
       {/* Comparison Tab Displaying Benchmark Answer and Overall Best */}
-      <div style={{ marginTop: '0px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', backgroundColor: '#f0f0f0' }}>
+      <div style={{ marginTop: '0px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', backgroundColor: '#000000' }}>
         <h2>Comparison & Benchmark</h2>
          {overallLoading && evaluationResults === null && <p>Waiting for responses to evaluate...</p>}
         {evaluationResults && (

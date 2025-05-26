@@ -13,6 +13,7 @@ from app.benchmarking.evaluator import evaluate_panel_response
 import logging
 import tempfile
 from pydantic import BaseModel
+import time
 
 # --- Global/In-Memory Storage for Benchmark Data (for demonstration) ---
 # In a real app, manage this per user session or document upload
@@ -30,7 +31,7 @@ class ChatRequest(BaseModel):
 
 class EvaluationRequest(BaseModel):
     # Assuming the frontend sends a list of panel outputs
-    panel_outputs: list[dict] # e.g., [{"id": 1, "response": "..."}]
+    panel_outputs: list[dict] # e.g., [{"id": 1, "response": "...", "context": "...", "response_time": 1.23}]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -79,25 +80,39 @@ async def chat(request: ChatRequest):
         benchmark_data["query"] = request.message
         benchmark_data["benchmark_answer"] = "" # Clear previous benchmark answer
 
+        start_time = time.time() # Start timing
+
         # Route based on RAG type
         if request.rag_type == 'basic':
-            # Call the basic RAG function (currently uses Groq)
-            # In a more advanced version, pass request.model_id here
+            # answer_question should return {"answer": ..., "context": ..., "sources": ...}
             result = answer_question(request.message)
         elif request.rag_type == 'self-query':
-             # Call the self-query RAG function (currently uses Gemini)
-            # In a more advanced version, pass request.model_id here
+            # self_query_rag_pipeline should return {"answer": ..., "context": ..., "sources": ..., "filters_used": ...}
             result = self_query_rag_pipeline(request.message)
         elif request.rag_type == 'reranker':
-            # Call the reranker RAG function (currently uses Gemini + Jina)
-            # In a more advanced version, pass request.model_id here
+            # reranker_rag_pipeline should return {"answer": ..., "context": ..., "sources": ..., "rerank_scores": ...}
             result = reranker_rag_pipeline(request.message)
         else:
             raise HTTPException(status_code=400, detail="Invalid RAG type")
 
-        # The structure of 'result' depends on the RAG function called.
-        # You might need to standardize the output format if they differ.
-        return result
+        end_time = time.time() # End timing
+        response_time = round(end_time - start_time, 4) # Calculate time in seconds, round to 4 decimals
+
+        # Standardize the response structure
+        # Assuming all RAG functions return at least 'answer' and 'context' or 'sources'
+        # If 'sources' is returned, you might want to format it into a 'context' string
+        standardized_response = {
+            "answer": result.get("answer", "No answer provided."),
+            "context": result.get("context", result.get("sources", "No context provided.")), # Prefer 'context', fallback to 'sources'
+            "response_time": response_time,
+            "rag_type_used": request.rag_type, # Include for clarity
+            "model_id_used": request.model_id, # Include for clarity
+            # You can include other specific details from 'result' here if needed on the frontend
+            # e.g., "sources_detail": result.get("sources"),
+            # "filters_used": result.get("filters_used"),
+        }
+
+        return standardized_response
 
     except Exception as e:
         logging.exception(f"Chat request failed for RAG type {request.rag_type} and model {request.model_id}")
@@ -129,9 +144,14 @@ async def evaluate_responses(request: EvaluationRequest):
     for panel_output in request.panel_outputs:
         panel_id = panel_output.get("id")
         response_text = panel_output.get("response", "")
+        # Retrieve response_time and context from the received data
+        response_time = panel_output.get("response_time", None)
+        context_text = panel_output.get("context", "No context sent.")
 
         logging.info(f"Panel {panel_id} Response: {response_text[:200]}...") # Log start of panel response
         print(f"DEBUG: Evaluating Panel {panel_id} with response: {response_text[:200]}...") # Add print statement inside loop
+        print(f"DEBUG: Panel {panel_id} Context: {str(context_text)[:200]}...") # Log context too
+        print(f"DEBUG: Panel {panel_id} Response Time: {response_time}") # Log response time
 
         # --- Use the new evaluation function ---
         scores = evaluate_panel_response(response_text, benchmark_answer)
@@ -145,6 +165,10 @@ async def evaluate_responses(request: EvaluationRequest):
             "similarity_score": scores["similarity_score"],
             "correctness_score": scores["correctness_score"],
             "total_score": scores["total_score"],
+            # Include response time and context in evaluation results for completeness,
+            # although frontend might already have them from the chat response
+            "response_time": response_time,
+            "context": context_text,
         })
 
         if scores["total_score"] > best_score:
