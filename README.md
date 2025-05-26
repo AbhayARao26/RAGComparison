@@ -1,4 +1,4 @@
-# RAGComparisonn
+# RAGComparison
 
 This project compares different RAG (Retrieval-Augmented Generation) strategies and Large Language Models (LLMs).
 
@@ -11,7 +11,69 @@ This project compares different RAG (Retrieval-Augmented Generation) strategies 
     cd RAGComparison
     ```
 
-2.  **Set up backend (FastAPI):**
+2.  **Set up Qdrant (Vector Database):**
+
+    ### macOS:
+    ```bash
+    # Create Qdrant directory and storage
+    mkdir -p ~/qdrant/storage
+    
+    # Download Qdrant binary (for Apple Silicon/M1/M2 Macs)
+    cd ~/qdrant
+    curl -L https://github.com/qdrant/qdrant/releases/download/v1.14.1/qdrant-aarch64-apple-darwin.tar.gz -o qdrant.tar.gz
+    tar -xzf qdrant.tar.gz
+    chmod +x qdrant
+    rm qdrant.tar.gz
+    
+    # Create config file
+    mkdir -p config
+    echo "storage:\n  storage_path: ~/qdrant/storage" > config/config.yaml
+    
+    # Start Qdrant
+    ./qdrant --config-path config/config.yaml
+    ```
+
+    ### Windows:
+    ```bash
+    # Create Qdrant directory and storage
+    mkdir %USERPROFILE%\qdrant\storage
+    
+    # Download Qdrant binary from:
+    # https://github.com/qdrant/qdrant/releases/download/v1.14.1/qdrant-x86_64-pc-windows-msvc.zip
+    
+    # Extract the zip file and move qdrant.exe to %USERPROFILE%\qdrant
+    
+    # Create config file
+    mkdir %USERPROFILE%\qdrant\config
+    echo storage: > %USERPROFILE%\qdrant\config\config.yaml
+    echo   storage_path: %USERPROFILE%\qdrant\storage >> %USERPROFILE%\qdrant\config\config.yaml
+    
+    # Start Qdrant
+    cd %USERPROFILE%\qdrant
+    qdrant.exe --config-path config\config.yaml
+    ```
+
+    ### Linux:
+    ```bash
+    # Create Qdrant directory and storage
+    mkdir -p ~/qdrant/storage
+    
+    # Download Qdrant binary
+    cd ~/qdrant
+    curl -L https://github.com/qdrant/qdrant/releases/download/v1.14.1/qdrant-x86_64-unknown-linux-gnu.tar.gz -o qdrant.tar.gz
+    tar -xzf qdrant.tar.gz
+    chmod +x qdrant
+    rm qdrant.tar.gz
+    
+    # Create config file
+    mkdir -p config
+    echo "storage:\n  storage_path: ~/qdrant/storage" > config/config.yaml
+    
+    # Start Qdrant
+    ./qdrant --config-path config/config.yaml
+    ```
+
+3.  **Set up backend (FastAPI):**
 
     Navigate to the `backend` directory and install dependencies:
 
@@ -37,7 +99,7 @@ This project compares different RAG (Retrieval-Augmented Generation) strategies 
     uvicorn app.main:app --reload
     ```
 
-3.  **Set up frontend (Next.js):**
+4.  **Set up frontend (Next.js):**
 
     Navigate to the `frontend` directory and install dependencies:
 
@@ -52,7 +114,7 @@ This project compares different RAG (Retrieval-Augmented Generation) strategies 
     npm run dev
     ```
 
-4.  **Install System Dependencies:**
+5.  **Install System Dependencies:**
 
     You need **Poppler** and **Tesseract** installed on your system for PDF processing and OCR.
 
@@ -78,4 +140,32 @@ This project compares different RAG (Retrieval-Augmented Generation) strategies 
 
 ## Usage
 
-Once both the backend and frontend servers are running, open your browser to `http://localhost:3000` (or wherever your Next.js app is served) to access the application.
+1. Make sure Qdrant is running (you should see "Qdrant HTTP listening on 6333" in the terminal)
+2. Start the backend server (FastAPI)
+3. Start the frontend server (Next.js)
+4. Open your browser to `http://localhost:3000` to access the application
+
+## Verifying the Setup
+
+- Qdrant Web UI: http://localhost:6333/dashboard
+- Backend API: http://localhost:8000
+- Frontend: http://localhost:3000
+
+## Troubleshooting
+
+- If Qdrant fails to start, check if port 6333 is already in use:
+  ```bash
+  # macOS/Linux
+  lsof -i :6333
+  
+  # Windows
+  netstat -ano | findstr :6333
+  ```
+- If you need to stop Qdrant:
+  ```bash
+  # macOS/Linux
+  kill $(lsof -t -i:6333)
+  
+  # Windows
+  taskkill /PID <PID> /F
+  ```
