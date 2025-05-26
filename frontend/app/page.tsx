@@ -18,7 +18,7 @@ export default function Home() {
   const [panels, setPanels] = useState<ChatPanelState[]>([
     { id: 1, selectedRagType: 'basic', selectedModel: 'groq', response: '', loading: false },
     { id: 2, selectedRagType: 'self-query', selectedModel: 'gemini', response: '', loading: false },
-    // You could add more panels here or implement a button to add new ones
+    // Remove the third panel to set default to 2
   ]);
   const [overallLoading, setOverallLoading] = useState<boolean>(false); // Loading state for the overall query
 
@@ -90,7 +90,7 @@ export default function Home() {
 
     console.log(`Submitting query: "${query}" to ${panels.length} panels concurrently.`);
 
-    // Create an array of promises, one for each panel's API call
+    // Create an array of promises, one for each panel\'s API call
     const fetchPromises = panels.map(async (panel) => {
       const chatRequestData = {
         rag_type: panel.selectedRagType,
@@ -130,6 +130,40 @@ export default function Home() {
     console.log('All panel queries finished.');
   };
 
+  // Function to handle adding a new panel
+  const handleAddPanel = () => {
+    setPanels(prevPanels => [
+      ...prevPanels,
+      { 
+        id: prevPanels.length + 1, // Simple way to generate a unique ID
+        selectedRagType: 'basic', // Default RAG type for new panels
+        selectedModel: 'groq',    // Default model for new panels
+        response: '',
+        loading: false,
+      }, 
+    ]);
+  };
+
+  // Function to handle deleting a panel
+  const handleDeletePanel = (idToDelete: number) => {
+    // Prevent deletion if only one panel remains
+    if (panels.length <= 1) {
+      alert('You must have at least one panel.');
+      return;
+    }
+    // Filter out the panel to be deleted and renumber the remaining ones
+    setPanels(prevPanels => {
+      const filteredPanels = prevPanels.filter(panel => panel.id !== idToDelete);
+      // Renumber the remaining panels
+      const renumberedPanels = filteredPanels.map((panel, index) => ({
+        ...panel,
+        id: index + 1,
+      }));
+      return renumberedPanels;
+    });
+  };
+
+
   return (
     <div style={{ padding: '20px', maxWidth: '1000px', margin: 'auto' }}>
       <h1>RAG Comparison Frontend</h1>
@@ -160,11 +194,30 @@ export default function Home() {
         </form>
       </div>
 
+      {/* Add Panel Button */}
+      <button onClick={handleAddPanel} disabled={overallLoading} style={{ marginBottom: '20px' }}>
+        Add New Panel
+      </button>
+
       {/* Container for Panels */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px', marginBottom: '20px' }}>
         {panels.map(panel => (
           <div key={panel.id} style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
-            <h3>Panel {panel.id}</h3>
+            {/* Panel Header with Delete Button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3>Panel {panel.id}</h3>
+                 {/* Show delete button only if more than 1 panel exists */}
+                {panels.length > 1 && (
+                    <button
+                        onClick={() => handleDeletePanel(panel.id)}
+                        disabled={overallLoading}
+                        style={{ background: 'red', color: 'white', border: 'none', borderRadius: '4px', padding: '5px 10px', cursor: overallLoading ? 'not-allowed' : 'pointer' }}
+                    >
+                        Delete
+                    </button>
+                )}
+            </div>
+
             <div style={{ marginBottom: '10px' }}>
               {/* Dropdown for RAG Type */}
               <label htmlFor={`rag-select-${panel.id}`} style={{ marginRight: '10px' }}>RAG Type:</label>
