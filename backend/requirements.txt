@@ -12,4 +12,4 @@ pdfplumber
 pdf2image
 pytesseract
 pydantic
-numpy # Added as a dependency for scikit-learn and sentence-transformers
+numpy # Added as a dependency for sentence-transformers
