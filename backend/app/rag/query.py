@@ -1,10 +1,15 @@
 from groq import Groq
 from .retriever import retrieve_similar
 from sentence_transformers import SentenceTransformer
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-client = Groq(api_key="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")
+client = Groq(api_key=GROQ_API_KEY)
 
 def answer_question(question):
     q_emb = model.encode([question])[0]
