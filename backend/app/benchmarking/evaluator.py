@@ -7,6 +7,15 @@ import numpy as np
 # Ensure this model is appropriate for semantic similarity tasks
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
+def cosine_similarity_np(vec1, vec2):
+    dot_product = np.dot(vec1, vec2)
+    norm_a = np.linalg.norm(vec1)
+    norm_b = np.linalg.norm(vec2)
+    if norm_a == 0 or norm_b == 0:
+        return 0 # Handle zero vectors
+    else:
+        return dot_product / (norm_a * norm_b)
+
 def calculate_similarity(text1: str, text2: str) -> float:
     """
     Calculates the cosine similarity between two texts using sentence embeddings.
@@ -18,7 +27,7 @@ def calculate_similarity(text1: str, text2: str) -> float:
     try:
         embeddings = model.encode([text1, text2])
         # Calculate cosine similarity between the two vectors
-        similarity_score = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+        similarity_score = cosine_similarity_np(embeddings[0], embeddings[1])
         return float(similarity_score)
     except Exception as e:
         print(f"Error calculating similarity: {e}")

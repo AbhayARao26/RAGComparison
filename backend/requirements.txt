@@ -12,5 +12,4 @@ pdfplumber
 pdf2image
 pytesseract
 pydantic
-scikit-learn # Added for cosine similarity
 numpy # Added as a dependency for scikit-learn and sentence-transformers
