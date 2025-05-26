@@ -2,6 +2,10 @@
 
 This project compares different RAG (Retrieval-Augmented Generation) strategies and Large Language Models (LLMs).
 
+### You can see the working in the video below:
+https://github.com/user-attachments/assets/7697616b-f260-481b-b773-c82f94b3fe32
+
+
 ## Setup
 
 1.  **Clone the repository:**
